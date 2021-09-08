@@ -9,6 +9,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Install nvim binary
+        uses: rhysd/action-setup-vim@v1
+        if: steps.cache-nvim.outputs.cache-hit != 'true' || steps.cache-nvim-windows.outputs.cache-hit != 'true'
+        with:
+          neovim: true
+          version: nightly
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v1.8.1
