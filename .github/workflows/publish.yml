@@ -22,8 +22,6 @@ jobs:
         with:
           dotnet-version: 5.0.x
           source-url: https://nuget.pkg.github.com/smolck/index.json
-        env:
-          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Install dependencies
         run: dotnet restore
@@ -37,4 +35,4 @@ jobs:
       - name: Publish
         run: |
           dotnet pack src/NvimClient.API/NvimClient.API.csproj --configuration Release
-          dotnet nuget push "src/NvimClient.API/bin/Release/*.nupkg"
+          dotnet nuget push "src/NvimClient.API/bin/Release/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }}
