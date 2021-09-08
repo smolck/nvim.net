@@ -40,6 +40,10 @@ namespace NvimClient
       _functionDocs = functionDocs?.ToDictionary(functionDoc => functionDoc.Function,
         funcDoc => funcDoc);
       var apiMetadata = GetAPIMetadata();
+
+      // Filter out functions only callable from Lua.
+      apiMetadata.Functions = apiMetadata.Functions.Where(f => !f.Parameters.Where(p => p.Type == "LuaRef").Any()).ToArray();
+
       var csharpClass = GenerateCSharpClass(apiMetadata);
       File.WriteAllText(outputPath, csharpClass);
     }
@@ -109,7 +113,7 @@ namespace NvimClient.API
           : "EventArgs.Empty";
         return $@"
       case ""{uiEvent.Name}"":
-          {camelCaseName}?.Invoke(this, {eventArgs});
+          {camelCaseName}Event?.Invoke(this, {eventArgs});
           break;
 ";
       }));
@@ -123,7 +127,7 @@ namespace NvimClient.API
           var genericTypeParam = uiEvent.Parameters.Any()
             ? $"<{camelCaseName}EventArgs>"
             : string.Empty;
-          return $"    public event EventHandler{genericTypeParam} {camelCaseName};";
+          return $"    public event EventHandler{genericTypeParam} {camelCaseName}Event;";
         }));
 
     private static string GenerateNvimUIEventArgs(
@@ -136,7 +140,8 @@ namespace NvimClient.API
   public class {eventName}EventArgs : EventArgs
   {{
 {
-      string.Join("", uiEvent.Parameters.Select(param => {
+      string.Join("", uiEvent.Parameters.Select(param =>
+      {
         var type = NvimTypesMap.GetCSharpType(param.Type);
         var paramName = StringUtil.ConvertToCamelCase(param.Name, true);
         return $"    public {type} {paramName} {{ get; set; }}\n";
@@ -229,7 +234,7 @@ namespace NvimClient.API
         Method = ""{function.Name}"",
         Arguments = GetRequestArguments(
           {string.Join(", ",
-            (isVirtualMethod ? new[] {"_msgPackExtObj"} : Enumerable.Empty<string>())
+            (isVirtualMethod ? new[] { "_msgPackExtObj" } : Enumerable.Empty<string>())
             .Concat(parameters.Select(param => param.Name)))})
       }});
 ";
